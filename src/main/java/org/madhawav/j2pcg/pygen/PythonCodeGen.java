@@ -75,7 +75,18 @@ class GenAnnotate extends CodeBlock{
     public GenAnnotate(String anotationName){
         this.anotationName = anotationName;
         this.parameters = new ArrayList<>();
+        this.useParams = true;
     }
+
+    public boolean isUseParams() {
+        return useParams;
+    }
+
+    public void setUseParams(boolean useParams) {
+        this.useParams = useParams;
+    }
+
+    private boolean useParams;
 
     public ArrayList<String> getParameters() {
         return parameters;
@@ -87,16 +98,23 @@ class GenAnnotate extends CodeBlock{
 
     @Override
     public void generatePython(PythonWriter writer) {
-        StringBuilder str_params = new StringBuilder();
-        boolean first = true;
-        for(String param: this.parameters){
-            if(!first){
-                str_params.append(", ");
+        if(useParams){
+            StringBuilder str_params = new StringBuilder();
+            boolean first = true;
+            for(String param: this.parameters){
+                if(!first){
+                    str_params.append(", ");
+                }
+                str_params.append(param);
+                first = false;
             }
-            str_params.append(param);
-            first = false;
+
+            writer.write("@" + anotationName +"(" + str_params.toString() + ")");
         }
-        writer.write("@" + anotationName +"(" + str_params.toString() + ")");
+        else{
+            writer.write("@" + anotationName);
+        }
+
     }
 }
 
@@ -274,10 +292,28 @@ class GenProxyCallbackClass extends GenClass{
         genMethod.getAnnotations().add(javaMethodAnnot);
 
         String block =
-                "self._proxy.[MethodName](*args)\n ";
+                "r = self._proxy.[MethodName](*args)\n";
+
+        if(method.getReturnType() != void.class)
+        {
+            if(!Util.isBasic(method.getReturnType())){
+                block += "if \"_proxy\" in r.__dict__:\n" +
+                        "    r = r.__dict__[\"_proxy\"]\n";
+            }
+
+            block += "return r\n";
+        }
+
+        block += "\n \n";
+
 
         SimpleSubstituteCodeBlock simpleSubstituteCodeBlock = new SimpleSubstituteCodeBlock(block);
         simpleSubstituteCodeBlock.addStringSubstitution("[MethodName]", method.getName());
+
+//        if(method.getReturnType() == void.class)
+//            simpleSubstituteCodeBlock.addStringSubstitution("[Return]","");
+//        else
+//            simpleSubstituteCodeBlock.addStringSubstitution("[Return]", "return ");
 
         genMethod.setMethodBody(simpleSubstituteCodeBlock);
         return genMethod;
@@ -290,12 +326,29 @@ class GenDirectProxyClass extends GenClass{
     public GenDirectProxyClass(Class input) {
         super(input.getSimpleName());
         this.getMethods().add(generateInitMethod(input));
+        this.getMethods().add(generateFromProxy(input));
 
         for(Method m : input.getMethods()){
             GenMethod _m = generateMethod(input, m);
             if(_m != null)
                 this.getMethods().add(generateMethod(input, m));
         }
+    }
+
+    private GenMethod generateFromProxy(Class _class){
+        GenMethod fromProxyMethod = new GenMethod("_from_proxy", new String[] {"cls", "proxy"});
+        GenAnnotate clsmethod = new GenAnnotate("classmethod");
+        clsmethod.setUseParams(false);
+        fromProxyMethod.getAnnotations().add(clsmethod);
+        String block =
+                "new_class = [ClassName].__new__(cls)\n" +
+                        "new_class._proxy = proxy\n" +
+                        "return new_class\n \n";
+
+        SimpleSubstituteCodeBlock simpleSubstituteCodeBlock = new SimpleSubstituteCodeBlock(block);
+        simpleSubstituteCodeBlock.addStringSubstitution("[ClassName]", _class.getSimpleName());
+        fromProxyMethod.setMethodBody(simpleSubstituteCodeBlock);
+        return fromProxyMethod;
     }
 
     private GenMethod generateMethod(Class _class, Method method){
@@ -316,15 +369,37 @@ class GenDirectProxyClass extends GenClass{
         GenMethod genMethod = new GenMethod(method.getName(), new String[] {"self", "*args"});
 
         String block =
-                "[Return]self._proxy.[MethodName](*args)\n ";
+                "res = self._proxy.[MethodName](*args)\n";
+
+        if(method.getReturnType() != void.class) {
+            if(Util.isBasic(method.getReturnType())){
+                block += "res = " + Util.getBasicConverterName(method.getReturnType()) + "(res)\n";
+            }
+            else {
+                // Unwrap and obtain proxy
+                block += "if \"_proxy\" in res.__dict__:\n" +
+                        "    res = res.__dict__[\"_proxy\"]\n";
+
+                if (Util.isProxyAvailable(method.getReturnType())) {
+
+                    block += "from python.[FullReturnType] import [SimpleReturnType] as tc\n";
+                    block += "res = tc._from_proxy(res)\n";
+                }
+            }
+            block += "return res\n";
+        }
+
+        block += "\n \n";
 
         SimpleSubstituteCodeBlock simpleSubstituteCodeBlock = new SimpleSubstituteCodeBlock(block);
         simpleSubstituteCodeBlock.addStringSubstitution("[MethodName]", method.getName());
+        simpleSubstituteCodeBlock.addStringSubstitution("[FullReturnType]",method.getReturnType().getCanonicalName());
+        simpleSubstituteCodeBlock.addStringSubstitution("[SimpleReturnType]",method.getReturnType().getSimpleName());
 
-        if(method.getReturnType() == void.class)
-            simpleSubstituteCodeBlock.addStringSubstitution("[Return]","");
-        else
-            simpleSubstituteCodeBlock.addStringSubstitution("[Return]", "return ");
+//        if(method.getReturnType() == void.class)
+//            simpleSubstituteCodeBlock.addStringSubstitution("[Return]","");
+//        else
+//            simpleSubstituteCodeBlock.addStringSubstitution("[Return]", "return ");
 
         genMethod.setMethodBody(simpleSubstituteCodeBlock);
         return genMethod;
@@ -366,6 +441,24 @@ class GenProxyClass extends GenClass {
         return initMethod;
     }
 
+    private GenMethod generateFromProxy(Class _class){
+        GenMethod fromProxyMethod = new GenMethod("_from_proxy", new String[] {"cls", "proxy"});
+        GenAnnotate clsmethod = new GenAnnotate("classmethod");
+        clsmethod.setUseParams(false);
+        fromProxyMethod.getAnnotations().add(clsmethod);
+
+        String block =
+                "new_class = [ClassName].__new__(cls)\n" +
+                "new_class._proxy = proxy\n" +
+                "new_class.override_callback = None\n" +
+                "return new_class\n \n";
+
+        SimpleSubstituteCodeBlock simpleSubstituteCodeBlock = new SimpleSubstituteCodeBlock(block);
+        simpleSubstituteCodeBlock.addStringSubstitution("[ClassName]", _class.getSimpleName());
+        fromProxyMethod.setMethodBody(simpleSubstituteCodeBlock);
+        return fromProxyMethod;
+    }
+
     private GenMethod generateMethod(Class _class, Method method){
         if(method.isBridge())
             return null;
@@ -383,16 +476,44 @@ class GenProxyClass extends GenClass {
 
         GenMethod genMethod = new GenMethod(method.getName(), new String[] {"self", "*args"});
 
-        String block =
-                "[Return]self._proxy._python_[MethodName](*args)\n ";
+        String block = "if type(self) != [ClassName]:\n" +
+                "    res = self._proxy._python_[MethodName](*args)\n" +
+                "else:\n" +
+                "    res = self._proxy.[MethodName](*args)\n";
+
+        if(method.getReturnType() != void.class) {
+            if(Util.isBasic(method.getReturnType())){
+                block += "res = " + Util.getBasicConverterName(method.getReturnType()) + "(res)\n";
+            }
+            else {
+                // Unwrap and obtain proxy
+                block += "if \"_proxy\" in res.__dict__:\n" +
+                "    res = res.__dict__[\"_proxy\"]\n";
+
+                if (Util.isProxyAvailable(method.getReturnType())) {
+
+                    block += "from python.[FullReturnType] import [SimpleReturnType] as tc\n";
+                    block += "res = tc._from_proxy(res)\n";
+                }
+            }
+            block += "return res\n";
+        }
+
+        block += " \n \n";
+
+//        String block =
+//                "[Return]self._proxy._python_[MethodName](*args)\n ";
 
         SimpleSubstituteCodeBlock simpleSubstituteCodeBlock = new SimpleSubstituteCodeBlock(block);
         simpleSubstituteCodeBlock.addStringSubstitution("[MethodName]", method.getName());
+        simpleSubstituteCodeBlock.addStringSubstitution("[ClassName]", _class.getSimpleName());
+        simpleSubstituteCodeBlock.addStringSubstitution("[FullReturnType]",method.getReturnType().getCanonicalName());
+        simpleSubstituteCodeBlock.addStringSubstitution("[SimpleReturnType]",method.getReturnType().getSimpleName());
 
-        if(method.getReturnType() == void.class)
-            simpleSubstituteCodeBlock.addStringSubstitution("[Return]","");
-        else
-            simpleSubstituteCodeBlock.addStringSubstitution("[Return]", "return ");
+//        if(method.getReturnType() == void.class)
+//            simpleSubstituteCodeBlock.addStringSubstitution("[Return]","");
+//        else
+//            simpleSubstituteCodeBlock.addStringSubstitution("[Return]", "return ");
 
         genMethod.setMethodBody(simpleSubstituteCodeBlock);
         return genMethod;
@@ -401,6 +522,7 @@ class GenProxyClass extends GenClass {
     public GenProxyClass(Class input) {
         super(input.getSimpleName());
         this.getMethods().add(generateInitMethod(input));
+        this.getMethods().add(generateFromProxy(input));
 
         for(Method m : input.getMethods()){
             GenMethod _m = generateMethod(input, m);

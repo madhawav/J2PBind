@@ -4,16 +4,16 @@ import org.madhawav.j2pcg.javagen.JavaCodeGen;
 import org.madhawav.j2pcg.javagen.JavaWriter;
 import org.madhawav.j2pcg.pygen.PythonCodeGen;
 import org.madhawav.j2pcg.pygen.PythonWriter;
+import test.TestClass;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.Random;
 import java.util.Scanner;
+
 
 public class App {
 
@@ -71,30 +71,9 @@ public class App {
 
     public static void main(String[] args) throws FileNotFoundException {
 
-        generate(Random.class,"output");
-
-        PythonWriter writer = new PythonWriter();
-
-
-        PythonCodeGen.generateProxyClass(Random.class,writer);
-        PythonCodeGen.generateProxyCallbackClass(Random.class, writer);
-
-        FileOutputStream fos = new FileOutputStream("output.py");
-        PrintStream ps = new PrintStream(fos);
-        ps.println(writer.getOutput());
-        ps.close();
-
-        System.out.println(writer.getOutput());
-
-        JavaWriter jWriter = new JavaWriter();
-        JavaCodeGen.generateProxyCode(Random.class, jWriter);
-
-        JavaCodeGen.generateCallbackInterfaceCode(Random.class,jWriter);
-
-        fos = new FileOutputStream("output.java");
-        ps = new PrintStream(fos);
-        ps.println(jWriter.getOutput());
-        ps.close();
+        generate(StringBuilder.class, "output");
+        generate(Scanner.class,"output");
+        generate(TestClass.class,"output");
 
 
     }

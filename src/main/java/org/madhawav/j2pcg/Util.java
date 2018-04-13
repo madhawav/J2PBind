@@ -36,6 +36,75 @@ public class Util {
         return results;
     }
 
+    public static boolean isBasic(Type t){
+        if(t.equals(boolean.class)){
+            return true;
+        }
+        else if(t.equals(byte.class)){
+            return true;
+        }
+        else if(t.equals(char.class)){
+            return true;
+        }
+        else if(t.equals(short.class)){
+            return true;
+        }
+        else if(t.equals(int.class)){
+            return true;
+        }
+        else if(t.equals(long.class)){
+            return true;
+        }
+        else if(t.equals(float.class)){
+            return true;
+        }
+        else if(t.equals(double.class)){
+            return true;
+        }
+        else if(t.equals(void.class)){
+            return true;
+        }
+        else if(t.equals(String.class)){
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean isProxyAvailable(Type t){
+        return true;
+    }
+
+    public static String getBasicConverterName(Type t){
+        if(t.equals(boolean.class)){
+            return "bool";
+        }
+        else if(t.equals(byte.class)){
+            return "byte";
+        }
+        else if(t.equals(char.class)){
+            return "str";
+        }
+        else if(t.equals(short.class)){
+            return "int";
+        }
+        else if(t.equals(int.class)){
+            return "int";
+        }
+        else if(t.equals(long.class)){
+            return "int";
+        }
+        else if(t.equals(float.class)){
+            return "float";
+        }
+        else if(t.equals(double.class)){
+            return "float";
+        }
+        else if(t.equals(String.class)){
+            return "str";
+        }
+        return "";
+    }
+
     public static String encodeParameterType(Type t){
         if(t.equals(boolean.class)){
             return "Z";

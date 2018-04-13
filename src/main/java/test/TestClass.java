@@ -1,14 +1,21 @@
 package test;
 public abstract class TestClass {
-    public void testMethod1(){
+    public int testMethod1(){
         System.out.println("Java: TestMethod1");
+        return 1;
 
     }
-    public abstract void testMethod2();
+    public abstract int testMethod2();
 
-    public void testBoth(){
+    public int testBoth(){
         System.out.println("Java: TestBoth");
-        this.testMethod1();
-        this.testMethod2();
+        int a = this.testMethod1();
+        System.out.println("Calling 2nd");
+        int b = this.testMethod2();
+        return a + b;
+    }
+
+    public TestClass getMe(){
+        return this;
     }
 }

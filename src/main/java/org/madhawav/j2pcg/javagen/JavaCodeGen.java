@@ -427,9 +427,11 @@ class GenProxyClass extends GenClass{
         }).collect(Collectors.toList()));
 
         String superCall = "";
-        if(!Modifier.isFinal(input.getModifiers()))
+        if(!Modifier.isFinal(input.getModifiers()) && !Modifier.isAbstract(method.getModifiers()))
             superCall = "\nelse { " +
                     "[doReturn]super.[MethodName]([Parameters]); }";
+        else
+            superCall = "\nelse { throw new RuntimeException(\"Method not implemented\"); }";
 
         String strBody = "if(this.callbackInterface != null) { [doReturn]this.callbackInterface.[MethodName]([Parameters]); }" +
                 superCall;
