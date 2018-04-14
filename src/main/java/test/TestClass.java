@@ -1,14 +1,16 @@
 package test;
-public class TestClass {
+public abstract class TestClass {
     public int testMethod1(){
         System.out.println("Java: TestMethod1");
         return 1;
 
     }
-    public int testMethod2(){
-        System.out.println("Java: TestMethod2");
-        return 4;
-    }
+//    public int testMethod2(){
+//        System.out.println("Java: TestMethod2");
+//        return 4;
+//    }
+
+    public abstract int testMethod2();
 
     public int testBoth(){
         System.out.println("Java: TestBoth");

@@ -429,8 +429,11 @@ class GenProxyClass extends GenClass {
         String block =
                 "super([ClassName], self).__init__(*args)\n" +
                 "self.override_callback = _[ClassName]OverrideCallback(self)\n" +
-                "\n" +
-                "self._proxy = autoclass(\"proxy.[RootedClassName]\")(self.override_callback, *args)\n" +
+                " \n" +
+                "common = [ClassName].__dict__.keys() & self.__class__.__dict__.keys()\n" +
+                "diff = [m for m in common if [ClassName].__dict__[m] != self.__class__.__dict__[m]]\n" +
+                " \n"+
+                "self._proxy = autoclass(\"proxy.[RootedClassName]\")(self.override_callback, diff ,*args)\n" +
                 "\n ";
 
         SimpleSubstituteCodeBlock simpleSubstituteCodeBlock = new SimpleSubstituteCodeBlock(block);

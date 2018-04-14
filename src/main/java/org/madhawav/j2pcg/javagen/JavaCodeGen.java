@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 public class JavaCodeGen {
     public static void generateProxyCode(Class input, JavaWriter writer){
         writer.write("package proxy." + input.getPackage().getName() + ";");
+        writer.write("import java.util.*;");
         GenProxyClass genProxyClass = new GenProxyClass(input);
         genProxyClass.generateJava(writer);
     }
@@ -338,8 +339,11 @@ class GenProxyClass extends GenClass{
         if(!Modifier.isFinal(input.getModifiers()))
             this.setExtendName(input.getCanonicalName());
 
-        String publicField = "private " + input.getSimpleName() + "_callbackInterface callbackInterface = null;";
-        this.getGlobalFields().add(publicField);
+        String callbackField = "private " + input.getSimpleName() + "_callbackInterface callbackInterface = null;";
+        this.getGlobalFields().add(callbackField);
+
+        String overridenMethodsField = "private List<String> overridenMethods = null;";
+        this.getGlobalFields().add(overridenMethodsField);
 
         for(Constructor cons: input.getConstructors()){
             this.getMethods().add(generateConstructor(input, cons));
@@ -433,8 +437,12 @@ class GenProxyClass extends GenClass{
         else
             superCall = "\nelse { throw new RuntimeException(\"Method not implemented\"); }";
 
-        String strBody = "if(this.callbackInterface != null) { [doReturn]this.callbackInterface.[MethodName]([Parameters]); }" +
-                superCall;
+//        String strBody = "if(this.callbackInterface != null) { [doReturn]this.callbackInterface.[MethodName]([Parameters]); }" +
+//                superCall;
+
+        String strBody = "if(this.overridenMethods.contains(\"[MethodName]\")) { [doReturn]this.callbackInterface.[MethodName]([Parameters]); }" + superCall;
+
+
         SimpleSubstituteCodeBlock simpleSubstituteCodeBlock = new SimpleSubstituteCodeBlock(strBody);
         simpleSubstituteCodeBlock.addStringSubstitution("[MethodName]", method.getName());
         simpleSubstituteCodeBlock.addParameterSubstitution("[Parameters]", Arrays.stream(method.getParameters()).map((p)->{
@@ -455,8 +463,12 @@ class GenProxyClass extends GenClass{
 
     private GenMethod generateConstructor(Class input, Constructor method){
         GenMethod constructor = new GenMethod(input.getSimpleName(), "public","");
-        GenParameter parameter = new GenParameter("callbackInterface",input.getSimpleName() + "_callbackInterface");
-        constructor.getParameters().add(parameter);
+        GenParameter callbackParameter = new GenParameter("callbackInterface",input.getSimpleName() + "_callbackInterface");
+        constructor.getParameters().add(callbackParameter);
+
+        GenParameter overridenMethodsParameter = new GenParameter("overiddenMethods","String[]");
+        constructor.getParameters().add(overridenMethodsParameter);
+
         constructor.getParameters().addAll(Arrays.stream(method.getParameters()).map((m)->{
             return new GenParameter(m.getName(), m.getType().getCanonicalName());
         }).collect(Collectors.toList()));
@@ -467,7 +479,10 @@ class GenProxyClass extends GenClass{
 
         String strBody =
                 superCall +
-                "this.callbackInterface = callbackInterface;";
+                "this.callbackInterface = callbackInterface;\n" +
+                "this.overridenMethods = new ArrayList<String>();\n" +
+                "for(String overridenMethod: overiddenMethods)\n" +
+                "            this.overridenMethods.add(overridenMethod);\n";
         SimpleSubstituteCodeBlock simpleSubstituteCodeBlock = new SimpleSubstituteCodeBlock(strBody);
         simpleSubstituteCodeBlock.addParameterSubstitution("[Parameters]", Arrays.stream(method.getParameters()).map((p)->{
             return p.getName();
