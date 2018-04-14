@@ -1,4 +1,4 @@
-#Java to Python Bind Generator (J2PBG)
+# Java to Python Bind Generator (J2PBG)
 
 Generate Python bindings (wrappers) on Java Classes. 
 * Generates Intellisense friendly Python bindings on Java Classes.
