@@ -323,15 +323,15 @@ class GenProxyCallbackClass extends GenClass{
 
 class GenDirectProxyClass extends GenClass{
     // Direct proxy is used on final classes
-    public GenDirectProxyClass(Class input) {
+    public GenDirectProxyClass(Class input, String pythonPrefix) {
         super(input.getSimpleName());
         this.getMethods().add(generateInitMethod(input));
         this.getMethods().add(generateFromProxy(input));
 
         for(Method m : input.getMethods()){
-            GenMethod _m = generateMethod(input, m);
+            GenMethod _m = generateMethod(input, m, pythonPrefix);
             if(_m != null)
-                this.getMethods().add(generateMethod(input, m));
+                this.getMethods().add(_m);
         }
     }
 
@@ -351,7 +351,7 @@ class GenDirectProxyClass extends GenClass{
         return fromProxyMethod;
     }
 
-    private GenMethod generateMethod(Class _class, Method method){
+    private GenMethod generateMethod(Class _class, Method method, String pythonPrefix){
         if(method.isBridge())
             return null;
 
@@ -382,7 +382,7 @@ class GenDirectProxyClass extends GenClass{
 
                 if (Util.isProxyAvailable(method.getReturnType())) {
 
-                    block += "from python.[FullReturnType] import [SimpleReturnType] as tc\n";
+                    block += "from [PythonPrefix].[FullReturnType] import [SimpleReturnType] as tc\n";
                     block += "res = tc._from_proxy(res)\n";
                 }
             }
@@ -395,6 +395,7 @@ class GenDirectProxyClass extends GenClass{
         simpleSubstituteCodeBlock.addStringSubstitution("[MethodName]", method.getName());
         simpleSubstituteCodeBlock.addStringSubstitution("[FullReturnType]",method.getReturnType().getCanonicalName());
         simpleSubstituteCodeBlock.addStringSubstitution("[SimpleReturnType]",method.getReturnType().getSimpleName());
+        simpleSubstituteCodeBlock.addStringSubstitution("[PythonPrefix]", pythonPrefix);
 
 //        if(method.getReturnType() == void.class)
 //            simpleSubstituteCodeBlock.addStringSubstitution("[Return]","");
@@ -462,7 +463,7 @@ class GenProxyClass extends GenClass {
         return fromProxyMethod;
     }
 
-    private GenMethod generateMethod(Class _class, Method method){
+    private GenMethod generateMethod(Class _class, Method method, String pythonPrefix){
         if(method.isBridge())
             return null;
 
@@ -495,7 +496,7 @@ class GenProxyClass extends GenClass {
 
                 if (Util.isProxyAvailable(method.getReturnType())) {
 
-                    block += "from python.[FullReturnType] import [SimpleReturnType] as tc\n";
+                    block += "from [PythonPrefix].[FullReturnType] import [SimpleReturnType] as tc\n";
                     block += "res = tc._from_proxy(res)\n";
                 }
             }
@@ -512,6 +513,7 @@ class GenProxyClass extends GenClass {
         simpleSubstituteCodeBlock.addStringSubstitution("[ClassName]", _class.getSimpleName());
         simpleSubstituteCodeBlock.addStringSubstitution("[FullReturnType]",method.getReturnType().getCanonicalName());
         simpleSubstituteCodeBlock.addStringSubstitution("[SimpleReturnType]",method.getReturnType().getSimpleName());
+        simpleSubstituteCodeBlock.addStringSubstitution("[PythonPrefix]", pythonPrefix);
 
 //        if(method.getReturnType() == void.class)
 //            simpleSubstituteCodeBlock.addStringSubstitution("[Return]","");
@@ -522,15 +524,15 @@ class GenProxyClass extends GenClass {
         return genMethod;
     }
 
-    public GenProxyClass(Class input) {
+    public GenProxyClass(Class input, String pythonPrefix) {
         super(input.getSimpleName());
         this.getMethods().add(generateInitMethod(input));
         this.getMethods().add(generateFromProxy(input));
 
         for(Method m : input.getMethods()){
-            GenMethod _m = generateMethod(input, m);
+            GenMethod _m = generateMethod(input, m, pythonPrefix);
             if(_m != null)
-                this.getMethods().add(generateMethod(input, m));
+                this.getMethods().add(_m);
         }
     }
 
@@ -538,16 +540,16 @@ class GenProxyClass extends GenClass {
 
 public class PythonCodeGen
 {
-    public static void generateProxyClass(Class input, PythonWriter writer){
-        GenProxyClass genProxyClass = new GenProxyClass(input);
+    public static void generateProxyClass(Class input, PythonWriter writer, String pythonPrefix){
+        GenProxyClass genProxyClass = new GenProxyClass(input, pythonPrefix);
 
         writer.write("from jnius import autoclass, PythonJavaClass, java_method, JavaClass, MetaJavaClass");
 
         genProxyClass.generatePython(writer);
     }
 
-    public static void generateDirectProxyClass(Class input, PythonWriter writer){
-        GenDirectProxyClass genProxyClass = new GenDirectProxyClass(input);
+    public static void generateDirectProxyClass(Class input, PythonWriter writer, String pythonPrefix){
+        GenDirectProxyClass genProxyClass = new GenDirectProxyClass(input, pythonPrefix);
 
         writer.write("from jnius import autoclass, PythonJavaClass, java_method, JavaClass, MetaJavaClass");
 
