@@ -1,5 +1,7 @@
 package org.madhawav.j2pcg.javagen;
 
+import com.sun.org.apache.xpath.internal.operations.Mod;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -315,6 +317,9 @@ class GenCallbackInterface extends GenInterface{
         if(!Modifier.isPublic(method.getReturnType().getModifiers()) & !Modifier.isProtected(method.getReturnType().getModifiers()))
             return null;
 
+        if (Modifier.isStatic(method.getModifiers()))
+            return null;
+
         if(method.isBridge())
             return null;
 
@@ -377,6 +382,9 @@ class GenProxyClass extends GenClass{
         if(method.isBridge())
             return null;
 
+        if (Modifier.isStatic(method.getModifiers()))
+            return null;
+
         for(Parameter p : method.getParameters()){
             if(!Modifier.isPublic(p.getType().getModifiers()) & !Modifier.isProtected(p.getType().getModifiers()))
                 return null;
@@ -411,6 +419,9 @@ class GenProxyClass extends GenClass{
             return null;
 
         if(method.isBridge())
+            return null;
+
+        if (Modifier.isStatic(method.getModifiers()))
             return null;
 
         for(Parameter p : method.getParameters()){

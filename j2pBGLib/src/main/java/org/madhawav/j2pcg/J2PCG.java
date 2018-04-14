@@ -39,14 +39,19 @@ public class J2PCG {
         return config;
     }
 
-    public void generateLoader(){
-        String loader_code = "import os\n" +
+    public File generateLoader() {
+        StringBuilder loader_code = new StringBuilder("import os\n" +
                 "def load_library(java_export_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),\"[PYTHON_TO_JAVA_PATH]\")):\n" +
                 "    import jnius_config\n" +
                 "    p = os.path.join(java_export_path)\n" +
-                "    jnius_config.add_classpath(p)\n";
+                "    jnius_config.add_classpath(p)\n");
 
-        loader_code = loader_code.replace("[PYTHON_TO_JAVA_PATH]",config.getJavaExportPathRelativeToPythonExportPath());
+        loader_code = new StringBuilder(loader_code.toString().replace("[PYTHON_TO_JAVA_PATH]", config.getJavaExportPathRelativeToPythonExportPath()));
+
+        for (String classPath : config.getCompilerClassPaths()) {
+            loader_code.append("    jnius_config.add_classpath(\"[Class_Path]\")\n".replace("[Class_Path]", classPath));
+        }
+
         File target = new File(config.getPythonExportPath() + "/loader.py");
         PrintStream ps = null;
 
@@ -60,6 +65,7 @@ public class J2PCG {
             if(ps != null)
                 ps.close();
         }
+        return target;
     }
 
     /**
@@ -132,8 +138,11 @@ public class J2PCG {
     public void generateSourceFiles() throws FileNotFoundException {
 
         for(Class c : this.config.getClasses()){
-            logger.info("Generating " + c.getCanonicalName());
-            generateClassSourceFiles(c);
+            if (!c.isInterface()) {
+                // Interfaces are not supported yet
+                logger.info("Generating " + c.getCanonicalName());
+                generateClassSourceFiles(c);
+            }
         }
 
         logger.info("Copying dependency files");

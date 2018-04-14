@@ -279,6 +279,9 @@ class GenProxyCallbackClass extends GenClass{
         if(!Modifier.isPublic(method.getReturnType().getModifiers()) && !Modifier.isProtected(method.getReturnType().getModifiers()))
             return null;
 
+        if (Modifier.isStatic(method.getModifiers()))
+            return null;
+
         for(Parameter p : method.getParameters()){
             if(!Modifier.isPublic(p.getType().getModifiers()) && !Modifier.isProtected(p.getType().getModifiers()))
                 return null;
@@ -359,6 +362,9 @@ class GenDirectProxyClass extends GenClass{
             return null;
 
         if(!Modifier.isPublic(method.getReturnType().getModifiers()) && !Modifier.isProtected(method.getReturnType().getModifiers()))
+            return null;
+
+        if (Modifier.isStatic(method.getModifiers()))
             return null;
 
         for(Parameter p : method.getParameters()){
@@ -471,6 +477,9 @@ class GenProxyClass extends GenClass {
             return null;
 
         if(!Modifier.isPublic(method.getReturnType().getModifiers()) && !Modifier.isProtected(method.getReturnType().getModifiers()))
+            return null;
+
+        if (Modifier.isStatic(method.getModifiers()))
             return null;
 
         for(Parameter p : method.getParameters()){
