@@ -70,6 +70,55 @@ public class J2PBGTest {
 
     }
 
+    @org.junit.Test
+    public void acceptAndReturnTest() throws IOException, ClassNotFoundException, InterruptedException {
+        // Copy sample class to output directory and compile
+        copyResourceToFile("SampleCode/AcceptAndReturnTest.java", "output/java/test/AcceptAndReturnTest.java");
+        compileJavaFile(new File("output/java/test/AcceptAndReturnTest.java"));
+
+        // Generate bindings
+        Class testClass = loadClass(new File("output/java/"), "test.AcceptAndReturnTest");
+        Config config = new Config("output");
+        config.getCompilerClassPaths().add(new File("output/java").getAbsolutePath());
+        config.addClass(testClass);
+
+        J2PBG j2PBG = new J2PBG(config);
+        j2PBG.generateSourceFiles();
+        j2PBG.compileJavaFiles();
+        j2PBG.generateLoader();
+
+        // Copy and run the test python app
+        copyResourceToFile("SampleCode/AcceptAndReturnTest.py", "output/python/AcceptAndReturnTest.py");
+
+        Process p = Runtime.getRuntime().exec("python3 AcceptAndReturnTest.py", null, new File("output/python"));
+        BufferedReader stdInput = new BufferedReader(new
+                InputStreamReader(p.getInputStream()));
+
+        BufferedReader stdError = new BufferedReader(new
+                InputStreamReader(p.getErrorStream()));
+
+        // read the output from the command
+        System.out.println("Standard output of the command:\n");
+        String s = null;
+        while ((s = stdInput.readLine()) != null) {
+            System.out.println(s);
+        }
+
+        System.out.println();
+        System.out.println();
+
+        // read the error from the command
+        System.out.println("Standard error of the command (This should be blank):");
+        s = null;
+        while ((s = stdError.readLine()) != null) {
+            System.out.println(s);
+        }
+
+        // We need a 0 exit code if everything goes well
+        assertEquals(0, p.waitFor());
+
+    }
+
     private static Class loadClass(File classPath, String className) throws MalformedURLException, ClassNotFoundException {
         //Code adapted from https://stackoverflow.com/questions/6219829/method-to-dynamically-load-java-class-files
 

@@ -298,8 +298,8 @@ class GenProxyCallbackClass extends GenClass{
         if(method.getReturnType() != void.class)
         {
             if(!Util.isBasic(method.getReturnType())){
-                block += "if \"_proxy\" in r.__dict__:\n" +
-                        "    r = r.__dict__[\"_proxy\"]\n";
+                block += "if hasattr(r,\"_proxy\"):\n" +
+                        "    r = r._proxy\n";
             }
 
             block += "return r\n";
@@ -381,8 +381,8 @@ class GenDirectProxyClass extends GenClass{
             }
             else {
                 // Unwrap and obtain proxy
-                block += "if \"_proxy\" in res.__dict__:\n" +
-                        "    res = res.__dict__[\"_proxy\"]\n";
+                block += "if hasattr(res,\"_proxy\"):\n" +
+                        "    res = res._proxy\n";
 
                 if (Util.isProxyAvailable(method.getReturnType())) {
 
@@ -487,7 +487,9 @@ class GenProxyClass extends GenClass {
 
         GenMethod genMethod = new GenMethod(method.getName(), new String[] {"self", "*args"});
 
-        String block = "if type(self) != [ClassName]:\n" +
+        String inputConversion = "import inspect\nargs = [(lambda a: (a._proxy if(hasattr(a, \"_proxy\")) else a))(arg) for arg in args] \n";
+
+        String block = inputConversion + "if type(self) != [ClassName]:\n" +
                 "    res = self._proxy._python_[MethodName](*args)\n" +
                 "else:\n" +
                 "    res = self._proxy.[MethodName](*args)\n";
@@ -498,8 +500,8 @@ class GenProxyClass extends GenClass {
             }
             else {
                 // Unwrap and obtain proxy
-                block += "if \"_proxy\" in res.__dict__:\n" +
-                "    res = res.__dict__[\"_proxy\"]\n";
+                block += "if hasattr(res, \"_proxy\"):\n" +
+                "    res = res._proxy\n";
 
                 if (Util.isProxyAvailable(method.getReturnType())) {
 
