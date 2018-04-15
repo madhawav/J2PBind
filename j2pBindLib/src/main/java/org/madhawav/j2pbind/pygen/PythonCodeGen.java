@@ -420,13 +420,14 @@ public class PythonCodeGen
                     "res = self._proxy.[MethodName](*args)\n";
 
             if(method.getReturnType() != void.class) {
+                block += "if hasattr(res,\"_proxy\"):\n" +
+                        "    res = res._proxy\n";
+
                 if(Util.isBasic(method.getReturnType())){
                     block += "res = " + Util.getBasicConverterName(method.getReturnType()) + "(res)\n";
                 }
                 else {
                     // Unwrap and obtain proxy
-                    block += "if hasattr(res,\"_proxy\"):\n" +
-                            "    res = res._proxy\n";
 
                     if (isProxyAvailable(method.getReturnType())) {
 

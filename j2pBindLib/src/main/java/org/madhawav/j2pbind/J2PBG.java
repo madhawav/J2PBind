@@ -139,6 +139,11 @@ public class J2PBG {
                 logger.info("Generating " + c.getCanonicalName());
                 generateClassSourceFiles(c);
             }
+            else if (c.isInterface()) {
+                // Interfaces are not supported yet
+                logger.info("Generating " + c.getCanonicalName());
+                generateClassSourceFiles(c);
+            }
         }
 
         logger.info("Copying dependency files");

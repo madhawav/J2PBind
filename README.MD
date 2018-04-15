@@ -4,7 +4,7 @@ Generate Python bindings (wrappers) on Java Classes.
 * Generates Intellisense friendly Python bindings on Java Classes.
 * Bindings are based on Pyjnius.
 * Compatible with Python 3.
-* Supports overriding of Java Classes from Python.
+* Supports overriding of Java Classes and Interfaces from Python.
   - Callbacks to Python from Java.
 
 ## How to run?
@@ -43,7 +43,6 @@ This example code extends a Java Class using a Python Class.
 4) If the build succeeds, _j2pBindCLI_ would be located at j2pBindCLI/target directory.
 
 ## Future Work
- - Extending Interfaces Support
  - Static functions support
  - Fields support
  - Maven binding generator plugin

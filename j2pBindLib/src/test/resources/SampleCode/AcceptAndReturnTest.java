@@ -1,8 +1,5 @@
 package test;
 public class AcceptAndReturnTest {
-    public AcceptAndReturnTest getMe(){
-        return this;
-    }
 
     public Object accept(Object m){
         System.out.println("Java: Accepted: " + m.getClass().getCanonicalName() + " : " + m.toString());
@@ -10,7 +7,7 @@ public class AcceptAndReturnTest {
         return m;
     }
 
-    public int accept(int m){
+    public int acceptInt(int m){
         System.out.println("Java: int accepted: " + m);
         System.out.println("Java: Returning input back to caller");
         return m*2;

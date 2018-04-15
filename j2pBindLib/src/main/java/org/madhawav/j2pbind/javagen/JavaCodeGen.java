@@ -82,6 +82,7 @@ public class JavaCodeGen {
         private String className;
         private String extendName;
         private ArrayList<String> globalFields;
+        private ArrayList<String> implementFields;
 
         private ArrayList<GenMethod> methods;
 
@@ -95,6 +96,11 @@ public class JavaCodeGen {
             this.extendName = null;
             this.globalFields = new ArrayList<>();
             this.methods = new ArrayList<>();
+            this.implementFields = new ArrayList<>();
+        }
+
+        public ArrayList<String> getImplementFields() {
+            return implementFields;
         }
 
         public String getModifier() {
@@ -122,6 +128,16 @@ public class JavaCodeGen {
             String str = this.modifier + " class " + this.className;
             if(this.extendName != null){
                 str+= " extends " + this.extendName;
+            }
+            if(this.implementFields.size() > 0){
+                str += " implements ";
+                boolean first = true;
+                for(String field: implementFields){
+                    if(!first)
+                        str += ", ";
+                    str += field;
+                    first = false;
+                }
             }
             javaWriter.write(str);
             javaWriter.write("{");
@@ -339,9 +355,16 @@ public class JavaCodeGen {
 
         public GenProxyClass(Class input) {
             super(input.getSimpleName(), "public");
-            if(!Modifier.isFinal(input.getModifiers()))
-                this.setExtendName(input.getCanonicalName());
 
+            if(!Modifier.isFinal(input.getModifiers())) {
+                if(input.isInterface()){
+                    this.getImplementFields().add(input.getCanonicalName());
+                }
+                else{
+                    this.setExtendName(input.getCanonicalName());
+                }
+
+            }
             String callbackField = "private " + input.getSimpleName() + "_callbackInterface callbackInterface = null;";
             this.getGlobalFields().add(callbackField);
 
@@ -350,6 +373,9 @@ public class JavaCodeGen {
 
             for(Constructor cons: input.getConstructors()){
                 this.getMethods().add(generateConstructor(input, cons));
+            }
+            if(input.getConstructors().length == 0){
+                this.getMethods().add(generateDefaultConstructor(input));
             }
 
             for(Method m : input.getMethods()){
@@ -468,6 +494,27 @@ public class JavaCodeGen {
 
             r.setMethodBody(simpleSubstituteCodeBlock);
             return r;
+        }
+        private GenMethod generateDefaultConstructor(Class input){
+            GenMethod constructor = new GenMethod(input.getSimpleName(), "public","");
+            GenParameter callbackParameter = new GenParameter("callbackInterface",input.getSimpleName() + "_callbackInterface");
+            constructor.getParameters().add(callbackParameter);
+
+            GenParameter overridenMethodsParameter = new GenParameter("overiddenMethods","String[]");
+            constructor.getParameters().add(overridenMethodsParameter);
+
+
+
+            String strBody =
+                            "this.callbackInterface = callbackInterface;\n" +
+                            "this.overridenMethods = new ArrayList<String>();\n" +
+                            "for(String overridenMethod: overiddenMethods)\n" +
+                            "            this.overridenMethods.add(overridenMethod);\n";
+            SimpleSubstituteCodeBlock simpleSubstituteCodeBlock = new SimpleSubstituteCodeBlock(strBody);
+            constructor.setMethodBody(simpleSubstituteCodeBlock);
+
+
+            return constructor;
         }
 
         private GenMethod generateConstructor(Class input, Constructor method){
