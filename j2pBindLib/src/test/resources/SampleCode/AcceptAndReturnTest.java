@@ -7,7 +7,7 @@ public class AcceptAndReturnTest {
         return m;
     }
 
-    public int acceptInt(int m){
+    public int accept(int m){
         System.out.println("Java: int accepted: " + m);
         System.out.println("Java: Returning input back to caller");
         return m*2;

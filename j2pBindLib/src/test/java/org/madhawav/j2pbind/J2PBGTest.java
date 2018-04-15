@@ -85,6 +85,7 @@ public class J2PBGTest {
         config.addClass(testClass);
         config.addClass(String.class);
         config.addClass(Integer.class);
+        config.addClass(Object.class);
 
         J2PBG j2PBG = new J2PBG(config);
         j2PBG.generateSourceFiles();

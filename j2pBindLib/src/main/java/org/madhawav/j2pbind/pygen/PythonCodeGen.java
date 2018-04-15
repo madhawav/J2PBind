@@ -366,6 +366,75 @@ public class PythonCodeGen
 
     }
 
+    /**
+     * Creates python code logic to convert response from jnius to a suitable format for the end user.
+     * @param input
+     * @param methodName
+     * @return
+     */
+     String generateReturnValueConversionLogic(Class input, String methodName){
+        List<Method> matchingMethods = new ArrayList<>();
+        for(Method method: input.getMethods()){
+            if(method.getName().equals(methodName)){
+                matchingMethods.add(method);
+            }
+        }
+
+        String block = "";
+        int nonVoidCount = (int) matchingMethods.stream().filter((v)->{return v.getReturnType() != void.class; }).count();
+
+        if(nonVoidCount > 0) {
+            // We have overrides with return values
+            if(nonVoidCount == 1){
+                // We have just one override with return value. We can do a certain output mapping
+                for(Method method : matchingMethods) {
+                    if (method.getReturnType() != void.class) {
+                        if(Util.isBasic(method.getReturnType())){
+                            block += "res = " + Util.getBasicConverterName(method.getReturnType()) + "(res)\n";
+                        }
+                        else {
+                            // Unwrap and obtain proxy
+
+                            if (isProxyAvailable(method.getReturnType())) {
+
+                                block += "from [PythonPrefix].[FullReturnType] import [SimpleReturnType] as tc\n";
+                                block += "res = tc._from_proxy(res)\n";
+                            }
+                        }
+                    }
+                }
+
+            }
+            else{
+                // There are many overrides with return values. Should decide return type based on proxy output.
+                for(Method method : matchingMethods){
+                    if(method.getReturnType() != void.class)
+                    {
+                        if(Util.isBasic(method.getReturnType())){
+                            block += "if type(res) == "+Util.getBasicConverterName(method.getReturnType()) + ":\n"  +"    res = " + Util.getBasicConverterName(method.getReturnType()) + "(res)\n";
+                        }
+                        else {
+                            // Unwrap and obtain proxy
+
+                            if (isProxyAvailable(method.getReturnType())) {
+                                block += "if hasattr(res, \"__javaclass__\") and res.__javaclass__ == \""+ method.getReturnType().getCanonicalName().replace(".","/") +"\":\n";
+                                block += "    from [PythonPrefix].[FullReturnType] import [SimpleReturnType] as tc\n";
+                                block += "    res = tc._from_proxy(res)\n";
+                            }
+                        }
+                    }
+
+                }
+            }
+
+
+            block += "return res\n";
+        }
+        return block;
+
+    }
+
+
     class GenDirectProxyClass extends GenClass{
         // Direct proxy is used on final classes
         public GenDirectProxyClass(Class input, String pythonPrefix) {
@@ -379,6 +448,8 @@ public class PythonCodeGen
                     this.getMethods().add(_m);
             }
         }
+
+
 
         private GenMethod generateFromProxy(Class _class){
             GenMethod fromProxyMethod = new GenMethod("_from_proxy", new String[] {"cls", "proxy"});
@@ -419,25 +490,10 @@ public class PythonCodeGen
             String block =
                     "res = self._proxy.[MethodName](*args)\n";
 
-            if(method.getReturnType() != void.class) {
-                block += "if hasattr(res,\"_proxy\"):\n" +
-                        "    res = res._proxy\n";
+            block += "if hasattr(res,\"_proxy\"):\n" +
+                    "    res = res._proxy\n";
 
-                if(Util.isBasic(method.getReturnType())){
-                    block += "res = " + Util.getBasicConverterName(method.getReturnType()) + "(res)\n";
-                }
-                else {
-                    // Unwrap and obtain proxy
-
-                    if (isProxyAvailable(method.getReturnType())) {
-
-                        block += "from [PythonPrefix].[FullReturnType] import [SimpleReturnType] as tc\n";
-                        block += "res = tc._from_proxy(res)\n";
-                    }
-                }
-                block += "return res\n";
-            }
-
+            block += generateReturnValueConversionLogic(_class,method.getName());
             block += "\n \n";
 
             SimpleSubstituteCodeBlock simpleSubstituteCodeBlock = new SimpleSubstituteCodeBlock(block);
@@ -539,23 +595,10 @@ public class PythonCodeGen
                     "else:\n" +
                     "    res = self._proxy.[MethodName](*args)\n";
 
-            if(method.getReturnType() != void.class) {
-                if(Util.isBasic(method.getReturnType())){
-                    block += "res = " + Util.getBasicConverterName(method.getReturnType()) + "(res)\n";
-                }
-                else {
-                    // Unwrap and obtain proxy
-                    block += "if hasattr(res, \"_proxy\"):\n" +
-                            "    res = res._proxy\n";
+            block += "if hasattr(res, \"_proxy\"):\n" +
+                    "    res = res._proxy\n";
 
-                    if (isProxyAvailable(method.getReturnType())) {
-
-                        block += "from [PythonPrefix].[FullReturnType] import [SimpleReturnType] as tc\n";
-                        block += "res = tc._from_proxy(res)\n";
-                    }
-                }
-                block += "return res\n";
-            }
+            block += generateReturnValueConversionLogic(_class,method.getName());
 
             block += " \n \n";
 

@@ -25,7 +25,7 @@ def accept_test_int(v):
     print("Python: Passing", type(v), ":" , str(v))
     sys.stdout.flush()
 
-    r = t.acceptInt(v)
+    r = t.accept(v)
     print("Python: Java returned:", type(r),":", str(r))
     sys.stdout.flush()
     return r
