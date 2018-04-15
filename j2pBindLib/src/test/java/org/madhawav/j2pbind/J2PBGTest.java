@@ -81,6 +81,8 @@ public class J2PBGTest {
         Config config = new Config("output");
         config.getCompilerClassPaths().add(new File("output/java").getAbsolutePath());
         config.addClass(testClass);
+        config.addClass(String.class);
+        config.addClass(Integer.class);
 
         J2PBG j2PBG = new J2PBG(config);
         j2PBG.generateSourceFiles();

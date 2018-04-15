@@ -68,10 +68,6 @@ public class Util {
         return false;
     }
 
-    public static boolean isProxyAvailable(Type t){
-        return true;
-    }
-
     public static String getBasicConverterName(Type t){
         if(t.equals(boolean.class)){
             return "bool";

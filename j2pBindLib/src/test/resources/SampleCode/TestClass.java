@@ -18,4 +18,8 @@ public abstract class TestClass {
         return a + b;
     }
 
+    public TestClass getMe(){
+        return this;
+    }
+
 }

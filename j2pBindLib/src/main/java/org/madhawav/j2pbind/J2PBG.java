@@ -166,8 +166,9 @@ public class J2PBG {
         PrintStream ps;
         if(!Modifier.isFinal(_class.getModifiers())){
             // We cannot override non final classes
+            JavaCodeGen javaCodeGen = new JavaCodeGen();
             JavaWriter jWriter = new JavaWriter();
-            JavaCodeGen.generateProxyCode(_class, jWriter);
+            javaCodeGen.generateProxyCode(_class, jWriter);
 
             fos = new FileOutputStream(javaProxyClassFile);
             ps = new PrintStream(fos);
@@ -175,7 +176,7 @@ public class J2PBG {
             ps.close();
 
             jWriter = new JavaWriter();
-            JavaCodeGen.generateCallbackInterfaceCode(_class, jWriter);
+            javaCodeGen.generateCallbackInterfaceCode(_class, jWriter);
 
             fos = new FileOutputStream(javaCallbackInterfaceFile);
             ps = new PrintStream(fos);
@@ -188,12 +189,16 @@ public class J2PBG {
 
 
         PythonWriter pWriter = new PythonWriter();
+
+        PythonCodeGen pythonCodeGen = new PythonCodeGen();
+        pythonCodeGen.getInScopeClasses().addAll(config.getClasses());
+
         if(!Modifier.isFinal(_class.getModifiers())){
-            PythonCodeGen.generateProxyClass(_class,pWriter,config.getPythonPrefix());
-            PythonCodeGen.generateProxyCallbackClass(_class,pWriter);
+            pythonCodeGen.generateProxyClass(_class,pWriter,config.getPythonPrefix());
+            pythonCodeGen.generateProxyCallbackClass(_class,pWriter);
         }
         else {
-            PythonCodeGen.generateDirectProxyClass(_class,pWriter, config.getPythonPrefix());
+            pythonCodeGen.generateDirectProxyClass(_class,pWriter, config.getPythonPrefix());
         }
 
         fos = new FileOutputStream(pythonProxyClassFile);
